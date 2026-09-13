@@ -44,7 +44,7 @@ if [ "$(id -u)" = "0" ]; then
     if [ -n "$EXISTING_GROUP" ]; then
         APP_GROUP="$EXISTING_GROUP"
     else
-        groupadd -g "$PGID" "$APP_GROUP" || true
+        groupadd -r -g "$PGID" "$APP_GROUP" || true
     fi
 
     # User setup
@@ -53,7 +53,7 @@ if [ "$(id -u)" = "0" ]; then
         APP_USER="$EXISTING_USER"
         usermod -d "$CONFIG_DIR" -g "$APP_GROUP" "$APP_USER" 2>/dev/null || true
     else
-        useradd -u "$PUID" -g "$APP_GROUP" -d "$CONFIG_DIR" -s /bin/bash "$APP_USER" || true
+        useradd -r -u "$PUID" -g "$APP_GROUP" -d "$CONFIG_DIR" -s /bin/bash "$APP_USER" || true
     fi
 
     # Sudoers configuration for seamless developer workflow
@@ -206,12 +206,12 @@ fi
 
 # Start remote control daemon directly in foreground if requested
 if [ "$AUTO_START_DAEMON" = "true" ] && command -v agy >/dev/null 2>&1; then
-    echo "Starting Antigravity Remote Control daemon directly..."
-    echo "Antigravity CLI is running and ready. Press Ctrl+C or stop container in Unraid to terminate."
+    echo "Starting Antigravity Remote Control daemon directly (agy remote-control serve)..."
+    echo "Antigravity CLI is running and ready. Connected to Antigravity Remote."
     if [ "$(id -u)" = "0" ]; then
-        exec sudo -E -u "$APP_USER" env HOME="$CONFIG_DIR" PATH="$PATH" agy --remote-control
+        exec sudo -E -u "$APP_USER" env HOME="$CONFIG_DIR" PATH="$PATH" agy remote-control serve
     else
-        exec agy --remote-control
+        exec agy remote-control serve
     fi
 fi
 
