@@ -1,7 +1,7 @@
 # Google Antigravity CLI on Unraid & Docker
 
 <p align="center">
-  <img src="assets/icon.svg" alt="Google Antigravity Logo" width="160" />
+  <img src="https://raw.githubusercontent.com/hoveeman/antigravity-cli-docker/main/assets/icon.png" alt="Google Antigravity Logo" width="160" />
 </p>
 
 <p align="center">
@@ -158,4 +158,4 @@ The container includes a multi-tiered update strategy:
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE). Google Antigravity and the Antigravity CLI are trademarks of Google LLC.
+This project is licensed under the [MIT License](https://github.com/hoveeman/antigravity-cli-docker/blob/main/LICENSE). Google Antigravity and the Antigravity CLI are trademarks of Google LLC.
