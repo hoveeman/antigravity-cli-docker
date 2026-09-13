@@ -1,7 +1,7 @@
 # Antigravity CLI Docker Container & Unraid Application
 
 - **Date**: 2026-09-13
-- **Author**: Antigravity & Trent (hoveeman)
+- **Author**: Antigravity & hoveeman
 - **Status**: Approved
 - **Target Repositories**:
   - GitHub: `hoveeman/antigravity-cli-docker`

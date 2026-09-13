@@ -5,7 +5,7 @@
 
 FROM ubuntu:24.04
 
-LABEL maintainer="Trent (hoveeman)"
+LABEL maintainer="hoveeman"
 LABEL org.opencontainers.image.title="Antigravity CLI for Unraid"
 LABEL org.opencontainers.image.description="Containerized Google Antigravity CLI with full developer toolchains for Unraid and Docker hosts"
 LABEL org.opencontainers.image.source="https://github.com/hoveeman/antigravity-cli-docker"

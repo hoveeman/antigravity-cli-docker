@@ -1,7 +1,7 @@
 # Google Antigravity CLI on Unraid & Docker
 
 <p align="center">
-  <img src="assets/icon.svg" alt="Antigravity Unraid Icon" width="160" />
+  <img src="assets/icon.svg" alt="Google Antigravity Logo" width="160" />
 </p>
 
 <p align="center">
@@ -29,35 +29,9 @@
 
 ---
 
-## Why Docker on Unraid?
-
-Installing Antigravity directly on bare-metal Unraid via terminal is strongly discouraged:
-1. **Unraid runs in RAM (`tmpfs`)**: Everything installed to `/usr/local/bin` or `~/.local/bin` is lost upon reboot.
-2. **No `systemd` on Unraid host**: Unraid uses Slackware BSD init scripts. The background daemon (`agy remote-control start`) relies on Linux user services that do not run on bare-metal Unraid.
-3. **Array Security**: Antigravity is an autonomous agent executing shell commands. Running inside a Docker container isolates it from your raw disk partitions (`/mnt/disk*`), USB boot flash drive (`/boot`), and Unraid management services (`emhttpd`).
-4. **Developer Dependencies**: The base Unraid NAS OS intentionally omits compilers, runtimes, and build tools needed by coding agents.
-
----
-
 ## Deployment Methods
 
-### Method 1: Unraid Community Applications (XML Template)
-
-1. In the Unraid WebGUI, navigate to the **Docker** tab.
-2. Under **Template Repositories**, add:
-   ```
-   https://github.com/hoveeman/antigravity-cli-docker
-   ```
-   *(Or download [`templates/antigravity-cli.xml`](templates/antigravity-cli.xml) into `/boot/config/plugins/dockerMan/templates-user/`).*
-3. Click **Add Container** and select **Antigravity CLI**.
-4. Configure paths:
-   - **Appdata / Config**: `/mnt/user/appdata/antigravity` &rarr; `/config`
-   - **Projects / Workspaces**: `/mnt/user/projects` &rarr; `/workspaces`
-5. Click **Apply**.
-
----
-
-### Method 2: Docker Compose
+### Method 1: Docker Compose
 
 If using Unraid's Docker Compose Manager plugin or any Docker host:
 
@@ -90,7 +64,7 @@ docker compose up -d
 
 ---
 
-### Method 3: Docker CLI
+### Method 2: Docker CLI
 
 ```bash
 docker run -d \
@@ -179,21 +153,6 @@ The container includes a multi-tiered update strategy:
 1. **On Boot**: Queries `https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/linux_<arch>.json` and pulls the latest release tarball directly from Google storage before launching.
 2. **Periodic Daemon**: Every 24 hours, checks for upstream releases while the container continues running.
 3. **Built-in `agy update`**: You can also run `agy update` inside the console at any time.
-
----
-
-## Publishing to Docker Hub & GHCR
-
-The repository includes a GitHub Actions workflow (`.github/workflows/docker-publish.yml`) that automatically builds multi-arch images (`linux/amd64` and `linux/arm64`).
-
-### To enable Docker Hub pushes:
-1. In your GitHub repository, go to **Settings** &rarr; **Secrets and variables** &rarr; **Actions**.
-2. Add the following repository secrets:
-   - `DOCKERHUB_USERNAME`: Your Docker Hub username (`hovee`)
-   - `DOCKERHUB_TOKEN`: A Docker Hub Personal Access Token (created at [hub.docker.com](https://hub.docker.com/settings/security))
-3. Pushes to `main` and release tags will automatically publish to both:
-   - `hovee/antigravity-cli`
-   - `ghcr.io/hoveeman/antigravity-cli`
 
 ---
 
