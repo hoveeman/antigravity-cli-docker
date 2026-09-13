@@ -1,0 +1,20 @@
+# Environment files with potential secrets
+.env
+*.local
+
+# Config and test directories
+config/
+workspaces/
+*.tar.gz
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Python caches
+__pycache__/
+*.pyc
+
+# IDE metadata
+.idea/
+.vscode/
