@@ -1,0 +1,25 @@
+services:
+  antigravity:
+    image: hoveeman/antigravity-cli:latest
+    # To build locally instead of pulling from Docker Hub:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    container_name: antigravity
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    environment:
+      - PUID=${PUID:-99}
+      - PGID=${PGID:-100}
+      - TZ=${TZ:-America/New_York}
+      - ANTIGRAVITY_INSTANCE_NAME=${ANTIGRAVITY_INSTANCE_NAME:-unraid-server}
+      - AUTO_START_DAEMON=${AUTO_START_DAEMON:-true}
+      - AUTO_UPDATE=${AUTO_UPDATE:-true}
+    volumes:
+      # Persistent config, Google auth tokens (.gemini/), and home directory
+      - ${APP_DATA_DIR:-/mnt/user/appdata/antigravity}:/config
+      # Code workspaces and project directories
+      - ${PROJECTS_DIR:-/mnt/user/projects}:/workspaces
+      # Optional host Docker socket passthrough
+      # - /var/run/docker.sock:/var/run/docker.sock
