@@ -13,7 +13,7 @@
   <Category>Development: Tools: Utilities:</Category>
   <WebUI/>
   <TemplateURL>https://raw.githubusercontent.com/hoveeman/antigravity-cli-docker/main/templates/antigravity-cli.xml</TemplateURL>
-  <Icon>https://raw.githubusercontent.com/hoveeman/antigravity-cli-docker/main/assets/icon.svg</Icon>
+  <Icon>https://raw.githubusercontent.com/hoveeman/antigravity-cli-docker/main/assets/icon.png</Icon>
   <ExtraParams>--restart unless-stopped</ExtraParams>
   <PostArgs/>
   <CPUset/>
