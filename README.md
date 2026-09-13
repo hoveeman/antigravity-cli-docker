@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/hoveeman/antigravity-cli-docker/actions"><img src="https://github.com/hoveeman/antigravity-cli-docker/actions/workflows/docker-publish.yml/badge.svg" alt="CI Build Status" /></a>
-  <a href="https://hub.docker.com/r/hoveeman/antigravity-cli"><img src="https://img.shields.io/docker/pulls/hoveeman/antigravity-cli.svg" alt="Docker Pulls" /></a>
+  <a href="https://hub.docker.com/r/hovee/antigravity-cli"><img src="https://img.shields.io/docker/pulls/hovee/antigravity-cli.svg" alt="Docker Pulls" /></a>
   <a href="https://github.com/hoveeman/antigravity-cli-docker/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
   <img src="https://img.shields.io/badge/Unraid-Compatible-orange.svg" alt="Unraid Compatible" />
   <img src="https://img.shields.io/badge/arch-amd64%20%7C%20arm64-blueviolet.svg" alt="Multi-Arch" />
@@ -64,7 +64,7 @@ If using Unraid's Docker Compose Manager plugin or any Docker host:
 ```yaml
 services:
   antigravity:
-    image: hoveeman/antigravity-cli:latest
+    image: hovee/antigravity-cli:latest
     container_name: antigravity
     restart: unless-stopped
     stdin_open: true
@@ -104,7 +104,7 @@ docker run -d \
   -e AUTO_UPDATE=true \
   -v /mnt/user/appdata/antigravity:/config \
   -v /mnt/user/projects:/workspaces \
-  hoveeman/antigravity-cli:latest
+  hovee/antigravity-cli:latest
 ```
 
 ---
@@ -189,10 +189,10 @@ The repository includes a GitHub Actions workflow (`.github/workflows/docker-pub
 ### To enable Docker Hub pushes:
 1. In your GitHub repository, go to **Settings** &rarr; **Secrets and variables** &rarr; **Actions**.
 2. Add the following repository secrets:
-   - `DOCKERHUB_USERNAME`: Your Docker Hub username (`hoveeman`)
+   - `DOCKERHUB_USERNAME`: Your Docker Hub username (`hovee`)
    - `DOCKERHUB_TOKEN`: A Docker Hub Personal Access Token (created at [hub.docker.com](https://hub.docker.com/settings/security))
 3. Pushes to `main` and release tags will automatically publish to both:
-   - `hoveeman/antigravity-cli`
+   - `hovee/antigravity-cli`
    - `ghcr.io/hoveeman/antigravity-cli`
 
 ---

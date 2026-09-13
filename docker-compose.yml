@@ -1,6 +1,6 @@
 services:
   antigravity:
-    image: hoveeman/antigravity-cli:latest
+    image: hovee/antigravity-cli:latest
     # To build locally instead of pulling from Docker Hub:
     # build:
     #   context: .

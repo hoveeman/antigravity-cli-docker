@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>Antigravity CLI</Name>
-  <Repository>hoveeman/antigravity-cli:latest</Repository>
-  <Registry>https://hub.docker.com/r/hoveeman/antigravity-cli</Registry>
+  <Repository>hovee/antigravity-cli:latest</Repository>
+  <Registry>https://hub.docker.com/r/hovee/antigravity-cli</Registry>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>bash</Shell>
