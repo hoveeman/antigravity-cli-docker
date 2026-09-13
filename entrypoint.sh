@@ -144,11 +144,19 @@ if [ "$AUTO_UPDATE" = "true" ]; then
 fi
 
 # Check for authentication
-AUTH_FILE="$CONFIG_DIR/.gemini/antigravity-cli/settings.json"
-IS_AUTHENTICATED=false
-if [ -f "$AUTH_FILE" ] || [ -f "$CONFIG_DIR/.gemini/credentials.json" ] || [ -d "$CONFIG_DIR/.gemini" ]; then
-    IS_AUTHENTICATED=true
-fi
+is_authenticated() {
+    # Check for API key
+    if [ -n "${GEMINI_API_KEY:-}" ]; then
+        return 0
+    fi
+    # Check for OAuth token files
+    if [ -f "$CONFIG_DIR/.gemini/antigravity-cli/antigravity-oauth-token" ] || \
+       [ -f "$CONFIG_DIR/.gemini/oauth_creds.json" ] || \
+       [ -f "$CONFIG_DIR/.gemini/credentials.json" ]; then
+        return 0
+    fi
+    return 1
+}
 
 # Graceful termination handler
 cleanup() {
@@ -156,8 +164,18 @@ cleanup() {
     if [ -n "${UPDATER_PID:-}" ]; then
         kill "$UPDATER_PID" 2>/dev/null || true
     fi
+    if [ -n "${DAEMON_PID:-}" ]; then
+        kill "$DAEMON_PID" 2>/dev/null || true
+    fi
+    if [ -n "${WAIT_PID:-}" ]; then
+        kill "$WAIT_PID" 2>/dev/null || true
+    fi
     if command -v agy >/dev/null 2>&1; then
-        su - "$APP_USER" -c "HOME='$CONFIG_DIR' PATH='$PATH' agy remote-control stop" 2>/dev/null || true
+        if [ "$(id -u)" = "0" ]; then
+            su - "$APP_USER" -c "HOME='$CONFIG_DIR' PATH='$PATH' agy remote-control stop" 2>/dev/null || true
+        else
+            agy remote-control stop 2>/dev/null || true
+        fi
     fi
     echo "Container stopped cleanly."
     exit 0
@@ -178,20 +196,40 @@ fi
 # Starting daemon mode
 echo "=== Starting Antigravity CLI Daemon Mode ==="
 
-if [ "$IS_AUTHENTICATED" != "true" ]; then
+if ! is_authenticated; then
     echo ""
     echo "======================================================================"
     echo " [ACTION REQUIRED] Google Antigravity CLI is not authenticated!"
     echo "----------------------------------------------------------------------"
-    echo " 1. In Unraid WebGUI, click the container icon and select 'Console'."
-    echo "    (Or run: docker exec -it antigravity bash)"
-    echo " 2. In the terminal, run:"
-    echo "       agy"
-    echo " 3. Copy the Google authentication URL into your browser to log in."
-    echo " 4. Paste the verification code back into the terminal."
-    echo " 5. All tokens and sessions will be saved to your /config volume."
+    echo " The container is running in waiting mode so you can log in."
+    echo ""
+    echo " 1. Open a terminal to this container:"
+    echo "    - Docker / CasaOS / Portainer:"
+    echo "      docker exec -it antigravity agy"
+    echo "    - Unraid WebGUI: click the container icon and select 'Console'"
+    echo "      then run: agy"
+    echo ""
+    echo " 2. Copy the Google authentication URL into your browser to log in."
+    echo " 3. Paste the verification code back into the terminal."
+    echo " 4. All tokens and sessions will be saved to your /config volume."
+    echo "    The daemon will automatically start as soon as login is complete."
     echo "======================================================================"
     echo ""
+    echo "Waiting for authentication (run 'docker exec -it antigravity agy' to log in)..."
+
+    while ! is_authenticated; do
+        sleep 3 &
+        WAIT_PID=$!
+        wait "$WAIT_PID" 2>/dev/null || true
+    done
+
+    echo "--> Authentication detected! Proceeding with daemon startup..."
+
+    # Ensure correct ownership of newly generated tokens
+    if [ "$(id -u)" = "0" ]; then
+        chown -R "$PUID:$PGID" "$CONFIG_DIR" 2>/dev/null || true
+        chmod -R u+rwX,go+rX "$CONFIG_DIR" 2>/dev/null || true
+    fi
 fi
 
 # Set the instance name in settings first
@@ -209,16 +247,20 @@ if [ "$AUTO_START_DAEMON" = "true" ] && command -v agy >/dev/null 2>&1; then
     echo "Starting Antigravity Remote Control daemon directly (agy remote-control serve)..."
     echo "Antigravity CLI is running and ready. Connected to Antigravity Remote."
     if [ "$(id -u)" = "0" ]; then
-        exec sudo -E -u "$APP_USER" env HOME="$CONFIG_DIR" PATH="$PATH" agy remote-control serve
+        sudo -E -u "$APP_USER" env HOME="$CONFIG_DIR" PATH="$PATH" agy remote-control serve &
     else
-        exec agy remote-control serve
+        agy remote-control serve &
     fi
+    DAEMON_PID=$!
+    wait "$DAEMON_PID" 2>/dev/null || true
+    echo "Notice: Antigravity Remote Control daemon exited."
 fi
 
-echo "Antigravity CLI container is running in idle loop. Press Ctrl+C or stop container in Unraid to terminate."
+echo "Antigravity CLI container is running in idle loop. Press Ctrl+C or stop container to terminate."
 
 # Keep container alive and responsive to traps
 while true; do
     sleep 3600 &
-    wait $!
+    WAIT_PID=$!
+    wait "$WAIT_PID" 2>/dev/null || true
 done

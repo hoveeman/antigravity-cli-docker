@@ -33,4 +33,33 @@ mkdir -p "$MOCK_CONFIG" "$MOCK_WORKSPACES"
 # Test dry run mode via environment variable
 TEST_DRY_RUN=1 bash "$ENTRYPOINT" --dry-run-test
 
+# 4. Test authentication detection function
+eval "$(sed -n '/^is_authenticated()/,/^}/p' "$ENTRYPOINT")"
+
+CONFIG_DIR="$MOCK_CONFIG"
+if is_authenticated; then
+    echo "FAIL: is_authenticated should return false when no credentials exist"
+    exit 1
+fi
+echo "PASS: is_authenticated returns false when credentials do not exist"
+
+# Test with token file present
+mkdir -p "$MOCK_CONFIG/.gemini/antigravity-cli"
+touch "$MOCK_CONFIG/.gemini/antigravity-cli/antigravity-oauth-token"
+if ! is_authenticated; then
+    echo "FAIL: is_authenticated should return true when antigravity-oauth-token exists"
+    exit 1
+fi
+echo "PASS: is_authenticated returns true when antigravity-oauth-token exists"
+rm -f "$MOCK_CONFIG/.gemini/antigravity-cli/antigravity-oauth-token"
+
+# Test with GEMINI_API_KEY set
+GEMINI_API_KEY="test_key"
+if ! is_authenticated; then
+    echo "FAIL: is_authenticated should return true when GEMINI_API_KEY is set"
+    exit 1
+fi
+echo "PASS: is_authenticated returns true when GEMINI_API_KEY is set"
+unset GEMINI_API_KEY
+
 echo "=== All entrypoint tests passed successfully ==="
