@@ -194,17 +194,28 @@ if [ "$IS_AUTHENTICATED" != "true" ]; then
     echo ""
 fi
 
-# Start remote control daemon if requested
-if [ "$AUTO_START_DAEMON" = "true" ] && command -v agy >/dev/null 2>&1; then
-    echo "Starting Antigravity Remote Control daemon (instance: $ANTIGRAVITY_INSTANCE_NAME)..."
+# Set the instance name in settings first
+if [ -n "$ANTIGRAVITY_INSTANCE_NAME" ] && command -v agy >/dev/null 2>&1; then
+    echo "Setting instance name to: $ANTIGRAVITY_INSTANCE_NAME"
     if [ "$(id -u)" = "0" ]; then
-        su - "$APP_USER" -c "HOME='$CONFIG_DIR' PATH='$PATH' agy remote-control start --name '$ANTIGRAVITY_INSTANCE_NAME' --session" || true
+        su - "$APP_USER" -c "HOME='$CONFIG_DIR' PATH='$PATH' agy remote-control start --name '$ANTIGRAVITY_INSTANCE_NAME' --session" >/dev/null 2>&1 || true
     else
-        agy remote-control start --name "$ANTIGRAVITY_INSTANCE_NAME" --session || true
+        agy remote-control start --name "$ANTIGRAVITY_INSTANCE_NAME" --session >/dev/null 2>&1 || true
     fi
 fi
 
-echo "Antigravity CLI is running and ready. Press Ctrl+C or stop container in Unraid to terminate."
+# Start remote control daemon directly in foreground if requested
+if [ "$AUTO_START_DAEMON" = "true" ] && command -v agy >/dev/null 2>&1; then
+    echo "Starting Antigravity Remote Control daemon directly..."
+    echo "Antigravity CLI is running and ready. Press Ctrl+C or stop container in Unraid to terminate."
+    if [ "$(id -u)" = "0" ]; then
+        exec sudo -E -u "$APP_USER" env HOME="$CONFIG_DIR" PATH="$PATH" agy --remote-control
+    else
+        exec agy --remote-control
+    fi
+fi
+
+echo "Antigravity CLI container is running in idle loop. Press Ctrl+C or stop container in Unraid to terminate."
 
 # Keep container alive and responsive to traps
 while true; do
