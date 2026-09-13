@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="orbitGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#818cf8" />
+      <stop offset="100%" stop-color="#c084fc" />
+    </linearGradient>
+    <linearGradient id="orbitGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="50%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+    <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="30%" stop-color="#60a5fa" />
+      <stop offset="70%" stop-color="#4338ca" />
+      <stop offset="100%" stop-color="#1e1b4b" stop-opacity="0" />
+    </radialGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background Card with rounded corners -->
+  <rect width="512" height="512" rx="110" fill="url(#bgGrad)" />
+  <rect width="504" height="504" x="4" y="4" rx="106" fill="none" stroke="#38bdf8" stroke-opacity="0.25" stroke-width="3" />
+
+  <!-- Outer Antigravity Rings / Orbits -->
+  <ellipse cx="256" cy="256" rx="190" ry="75" fill="none" stroke="url(#orbitGrad1)" stroke-width="12" transform="rotate(-35 256 256)" filter="url(#glow)" />
+  <ellipse cx="256" cy="256" rx="190" ry="75" fill="none" stroke="url(#orbitGrad2)" stroke-width="12" transform="rotate(35 256 256)" filter="url(#glow)" />
+  <ellipse cx="256" cy="256" rx="200" ry="80" fill="none" stroke="#a855f7" stroke-opacity="0.3" stroke-width="6" transform="rotate(90 256 256)" />
+
+  <!-- Core Celestial Antigravity Orb -->
+  <circle cx="256" cy="256" r="85" fill="url(#coreGlow)" filter="url(#glow)" />
+  <circle cx="256" cy="256" r="45" fill="#ffffff" opacity="0.9" />
+
+  <!-- Terminal / Agent Chevron Motif -->
+  <path d="M 226 216 L 276 256 L 226 296" fill="none" stroke="#0f172a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" />
+  <line x1="285" y1="296" x2="310" y2="296" stroke="#0f172a" stroke-width="14" stroke-linecap="round" />
+
+  <!-- Orbiting Quantum Particles -->
+  <circle cx="120" cy="180" r="14" fill="#38bdf8" filter="url(#glow)" />
+  <circle cx="392" cy="332" r="14" fill="#c084fc" filter="url(#glow)" />
+  <circle cx="380" cy="170" r="12" fill="#34d399" filter="url(#glow)" />
+  <circle cx="132" cy="342" r="12" fill="#818cf8" filter="url(#glow)" />
+</svg>

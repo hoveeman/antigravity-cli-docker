@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Antigravity CLI</Name>
+  <Repository>hoveeman/antigravity-cli:latest</Repository>
+  <Registry>https://hub.docker.com/r/hoveeman/antigravity-cli</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/hoveeman/antigravity-cli-docker/issues</Support>
+  <Project>https://antigravity.google</Project>
+  <Overview>Google Antigravity CLI (agy) is an autonomous AI coding agent designed by Google DeepMind. This Docker container runs Antigravity headlessly on Unraid with full developer toolchains (Python 3, Node.js, Git, build-essential, Docker CLI). It supports remote connection via the Antigravity desktop app or browser interface, maintains persistent login credentials and workspace configurations across restarts, and automatically stays up to date with official Google releases.</Overview>
+  <Category>Development: Tools: Utilities:</Category>
+  <WebUI/>
+  <TemplateURL>https://raw.githubusercontent.com/hoveeman/antigravity-cli-docker/main/templates/antigravity-cli.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/hoveeman/antigravity-cli-docker/main/assets/icon.svg</Icon>
+  <ExtraParams>--restart unless-stopped</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="Appdata / Config" Target="/config" Default="/mnt/user/appdata/antigravity" Mode="rw" Description="Container home directory. Stores persistent Google auth tokens (.gemini/), preferences, SSH keys, and shell history." Type="Path" Display="always" Required="true" Mask="false">
+    <Value>/mnt/user/appdata/antigravity</Value>
+  </Config>
+  <Config Name="Projects / Workspaces" Target="/workspaces" Default="/mnt/user/projects" Mode="rw" Description="Working directory where your code repositories and Unraid shares reside for the agent to access." Type="Path" Display="always" Required="true" Mask="false">
+    <Value>/mnt/user/projects</Value>
+  </Config>
+  <Config Name="Docker Socket (Optional)" Target="/var/run/docker.sock" Default="/var/run/docker.sock" Mode="rw" Description="Mount host docker socket if you want Antigravity to be able to inspect or run docker containers." Type="Path" Display="advanced" Required="false" Mask="false">
+    <Value>/var/run/docker.sock</Value>
+  </Config>
+  <Config Name="PUID" Target="PUID" Key="PUID" Default="99" Description="User ID for file ownership inside container (default 99 matches Unraid nobody user)." Type="Variable" Display="advanced" Required="true" Mask="false">
+    <Value>99</Value>
+  </Config>
+  <Config Name="PGID" Target="PGID" Key="PGID" Default="100" Description="Group ID for file ownership inside container (default 100 matches Unraid users group)." Type="Variable" Display="advanced" Required="true" Mask="false">
+    <Value>100</Value>
+  </Config>
+  <Config Name="Instance Name" Target="ANTIGRAVITY_INSTANCE_NAME" Key="ANTIGRAVITY_INSTANCE_NAME" Default="unraid-server" Description="Instance name displayed when connecting via Antigravity Remote." Type="Variable" Display="always" Required="true" Mask="false">
+    <Value>unraid-server</Value>
+  </Config>
+  <Config Name="Auto Start Daemon" Target="AUTO_START_DAEMON" Key="AUTO_START_DAEMON" Default="true" Description="Automatically launch agy remote-control background daemon on container boot." Type="Variable" Display="always" Required="false" Mask="false">
+    <Value>true</Value>
+  </Config>
+  <Config Name="Auto Update" Target="AUTO_UPDATE" Key="AUTO_UPDATE" Default="true" Description="Automatically query Google release manifests and update agy binary on container start and periodically." Type="Variable" Display="always" Required="false" Mask="false">
+    <Value>true</Value>
+  </Config>
+  <Config Name="Timezone" Target="TZ" Key="TZ" Default="America/New_York" Description="Container timezone for accurate log timestamps." Type="Variable" Display="advanced" Required="false" Mask="false">
+    <Value>America/New_York</Value>
+  </Config>
+</Container>
