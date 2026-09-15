@@ -62,4 +62,33 @@ fi
 echo "PASS: is_authenticated returns true when GEMINI_API_KEY is set"
 unset GEMINI_API_KEY
 
+# 5. Test update extraction logic for 'antigravity' binary name in tarball
+MOCK_UPDATE_DIR=$(mktemp -d)
+MOCK_TGZ="$MOCK_UPDATE_DIR/test_pkg.tar.gz"
+MOCK_EXTRACT="$MOCK_UPDATE_DIR/extract"
+mkdir -p "$MOCK_EXTRACT"
+MOCK_BIN_DIR="$MOCK_UPDATE_DIR/bin"
+mkdir -p "$MOCK_BIN_DIR"
+
+# Create a mock binary named 'antigravity'
+echo '#!/bin/sh' > "$MOCK_UPDATE_DIR/antigravity"
+echo 'echo 1.2.3' >> "$MOCK_UPDATE_DIR/antigravity"
+chmod 755 "$MOCK_UPDATE_DIR/antigravity"
+tar -czf "$MOCK_TGZ" -C "$MOCK_UPDATE_DIR" antigravity
+
+tar -xzf "$MOCK_TGZ" -C "$MOCK_EXTRACT"
+FOUND_BIN=$(find "$MOCK_EXTRACT" -type f \( -name agy -o -name antigravity \) -perm /111 2>/dev/null | head -n1 || true)
+if [ -z "$FOUND_BIN" ]; then
+    echo "FAIL: Could not locate extracted binary named antigravity"
+    exit 1
+fi
+cp "$FOUND_BIN" "$MOCK_BIN_DIR/agy"
+chmod 755 "$MOCK_BIN_DIR/agy"
+if [ "$("$MOCK_BIN_DIR/agy")" != "1.2.3" ]; then
+    echo "FAIL: Mock binary did not execute properly"
+    exit 1
+fi
+echo "PASS: Update extraction logic successfully locates and installs 'antigravity' binary as 'agy'"
+rm -rf "$MOCK_UPDATE_DIR"
+
 echo "=== All entrypoint tests passed successfully ==="

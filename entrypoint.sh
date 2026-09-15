@@ -60,9 +60,11 @@ if [ "$(id -u)" = "0" ]; then
     echo "$APP_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/antigravity
     chmod 0440 /etc/sudoers.d/antigravity
 
-    # Fix ownership of config directory
+    # Fix ownership of config directory and binary path
     chown -R "$PUID:$PGID" "$CONFIG_DIR" || true
     chmod -R u+rwX,go+rX "$CONFIG_DIR" || true
+    chgrp -R "$APP_GROUP" /usr/local/bin || true
+    chmod 775 /usr/local/bin || true
 fi
 
 # Export environment paths
@@ -104,15 +106,21 @@ update_antigravity() {
         if [ -n "$REMOTE_VERSION" ] && [ "$CURRENT_VERSION" != "$REMOTE_VERSION" ] && [ -n "$REMOTE_URL" ]; then
             echo "--> Newer version detected. Updating Antigravity CLI to $REMOTE_VERSION..."
             TMP_TGZ=$(mktemp /tmp/agy_update.XXXXXX.tar.gz)
+            TMP_EXTRACT=$(mktemp -d /tmp/agy_extract.XXXXXX)
             if curl -fsSL "$REMOTE_URL" -o "$TMP_TGZ"; then
-                tar -xzf "$TMP_TGZ" -C /tmp/
-                INSTALL_BIN=$(find /tmp -type f -name agy -perm /111 2>/dev/null | head -n1 || true)
+                tar -xzf "$TMP_TGZ" -C "$TMP_EXTRACT"
+                INSTALL_BIN=$(find "$TMP_EXTRACT" -type f \( -name agy -o -name antigravity \) -perm /111 2>/dev/null | head -n1 || true)
                 if [ -n "$INSTALL_BIN" ]; then
                     mv "$INSTALL_BIN" /usr/local/bin/agy
                     chmod 755 /usr/local/bin/agy
                     echo "--> Successfully updated Antigravity CLI to $REMOTE_VERSION"
+                else
+                    echo "Warning: Could not locate 'agy' or 'antigravity' binary in update archive."
                 fi
-                rm -f "$TMP_TGZ"
+                rm -rf "$TMP_TGZ" "$TMP_EXTRACT"
+            else
+                echo "Warning: Failed to download update archive from $REMOTE_URL."
+                rm -rf "$TMP_TGZ" "$TMP_EXTRACT"
             fi
         else
             echo "Antigravity CLI is up to date."
