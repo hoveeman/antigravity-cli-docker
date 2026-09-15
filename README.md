@@ -49,10 +49,12 @@ services:
       - TZ=America/New_York
       - ANTIGRAVITY_INSTANCE_NAME=unraid-server
       - AUTO_START_DAEMON=true
-      - AUTO_UPDATE=true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,exec,size=4g
     volumes:
-      - /mnt/user/appdata/antigravity:/config
-      - /mnt/user/projects:/workspaces
+      - /mnt/cache/appdata/antigravity:/config
+      - /mnt/cache/projects:/workspaces
+      - /dev/shm:/dev/shm
       # Optional Docker socket passthrough:
       # - /var/run/docker.sock:/var/run/docker.sock
 ```
@@ -70,14 +72,17 @@ docker compose up -d
 docker run -d \
   --name antigravity \
   --restart unless-stopped \
+  --cpu-shares=2048 \
+  --tmpfs /tmp:rw,nosuid,nodev,exec,size=4g \
   -e PUID=99 \
   -e PGID=100 \
   -e TZ=America/New_York \
   -e ANTIGRAVITY_INSTANCE_NAME=unraid-server \
   -e AUTO_START_DAEMON=true \
   -e AUTO_UPDATE=true \
-  -v /mnt/user/appdata/antigravity:/config \
-  -v /mnt/user/projects:/workspaces \
+  -v /mnt/cache/appdata/antigravity:/config \
+  -v /mnt/cache/projects:/workspaces \
+  -v /dev/shm:/dev/shm \
   hovee/antigravity-cli:latest
 ```
 
@@ -137,13 +142,39 @@ Once authenticated:
 | `AUTO_UPDATE` | `true` | Checks for and installs official Google CLI updates. |
 | `UMASK` | `002` | File creation mask. |
 
-### Volume Mounts
+### Volume Mounts & Storage
 
 | Container Path | Host Path (Unraid) | Description |
 |---|---|---|
-| `/config` | `/mnt/user/appdata/antigravity` | Persistent home directory (`.gemini/`, `.ssh/`, `.gitconfig`). |
-| `/workspaces` | `/mnt/user/projects` | Working directory where code and shares reside. |
+| `/config` | `/mnt/cache/appdata/antigravity` | Persistent home directory (`.gemini/`, `.ssh/`, `.gitconfig`). |
+| `/workspaces` | `/mnt/cache/projects` | Working directory where code repositories and projects reside. |
+| `/dev/shm` | `/dev/shm` | Host shared memory RAM pool for Chromium, browser tools, and build workers. |
 | `/var/run/docker.sock` *(Optional)* | `/var/run/docker.sock` | Pass host Docker socket to manage containers from Antigravity. |
+
+---
+
+## Unraid Performance & Optimization Guide
+
+To ensure fast compilation, instantaneous tool execution, and low system latency on Unraid:
+
+### 1. Bypass FUSE (`/mnt/cache` vs `/mnt/user`)
+* By default, Unraid paths like `/mnt/user/...` pass through Unraid's user-share FUSE abstraction layer (`shfs`).
+* For development tasks that read or write thousands of files (Git operations, Node `node_modules`, Gradle builds), FUSE introduces heavy CPU context-switching and I/O latency.
+* **Best Practice**: Map your `/config` and `/workspaces` volumes directly to your cache pool (e.g. `/mnt/cache/appdata/antigravity` and `/mnt/cache/projects`), or configure your shares with **Primary Storage: Cache** and **Secondary Storage: None** to leverage Unraid Exclusive Shares.
+
+### 2. Mount Host Shared Memory (`/dev/shm`)
+* Docker defaults `/dev/shm` to a restricted 64MB.
+* Headless browser automation (Chromium), Python multiprocessing, and compiler worker threads require shared memory.
+* Mapping Host `/dev/shm` $\rightarrow$ Container `/dev/shm` replaces the 64MB restriction with your server's RAM pool, eliminating browser rendering crashes and disk fallbacks.
+
+### 3. Mount `/tmp` to a RAM Disk (`tmpfs`)
+* Compilers and build tools dump thousands of short-lived temporary files into `/tmp`.
+* Adding `--tmpfs /tmp:rw,nosuid,nodev,exec,size=4g` (or `8g`) in **Extra Parameters** ensures that all temporary files are written at RAM speeds (~800+ MB/s) with zero SSD wear, and are automatically wiped clean on container restart.
+
+### 4. Give Interactive Builds CPU Priority (`--cpu-shares=2048`)
+* If your Unraid server runs heavy background services (e.g., UrBackup, Plex transcoding, Scrypted camera detection):
+* Add `--cpu-shares=2048` to Antigravity's **Extra Parameters**.
+* Under normal conditions, Antigravity idles at ~0% CPU. During multi-threaded compilation bursts, the Linux kernel prioritizes Antigravity over default containers (`1024` shares) so your builds finish quickly.
 
 ---
 

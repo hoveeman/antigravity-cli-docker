@@ -14,18 +14,21 @@
   <WebUI/>
   <TemplateURL>https://raw.githubusercontent.com/hoveeman/antigravity-cli-docker/main/templates/antigravity-cli.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/hoveeman/antigravity-cli-docker/main/assets/icon.png</Icon>
-  <ExtraParams>--restart unless-stopped</ExtraParams>
+  <ExtraParams>--tmpfs /tmp:rw,nosuid,nodev,exec,size=4g</ExtraParams>
   <PostArgs/>
   <CPUset/>
   <DateInstalled/>
   <DonateText/>
   <DonateLink/>
   <Requires/>
-  <Config Name="Appdata / Config" Target="/config" Default="/mnt/user/appdata/antigravity" Mode="rw" Description="Container home directory. Stores persistent Google auth tokens (.gemini/), preferences, SSH keys, and shell history." Type="Path" Display="always" Required="true" Mask="false">
+  <Config Name="Appdata / Config" Target="/config" Default="/mnt/user/appdata/antigravity" Mode="rw" Description="Container home directory. Stores persistent Google auth tokens (.gemini/), preferences, SSH keys, and shell history. TIP: For fastest performance and to bypass Unraid's FUSE (shfs) overhead, map directly to your cache pool (e.g. /mnt/cache/appdata/antigravity)." Type="Path" Display="always" Required="true" Mask="false">
     <Value>/mnt/user/appdata/antigravity</Value>
   </Config>
-  <Config Name="Projects / Workspaces" Target="/workspaces" Default="/mnt/user/projects" Mode="rw" Description="Working directory where your code repositories and Unraid shares reside for the agent to access." Type="Path" Display="always" Required="true" Mask="false">
+  <Config Name="Projects / Workspaces" Target="/workspaces" Default="/mnt/user/projects" Mode="rw" Description="Working directory where your code repositories and Unraid shares reside for the agent to access. TIP: For fastest build, git, and indexing speeds, map directly to your cache pool (e.g. /mnt/cache/projects) or use an Exclusive Share." Type="Path" Display="always" Required="true" Mask="false">
     <Value>/mnt/user/projects</Value>
+  </Config>
+  <Config Name="Shared Memory (RAM Buffer)" Target="/dev/shm" Default="/dev/shm" Mode="rw" Description="Mounts host shared memory to prevent Chromium, headless browser tools, and compiler workers from crashing or falling back to slow disk." Type="Path" Display="always" Required="false" Mask="false">
+    <Value>/dev/shm</Value>
   </Config>
   <Config Name="Docker Socket (Optional)" Target="/var/run/docker.sock" Default="/var/run/docker.sock" Mode="rw" Description="Mount host docker socket if you want Antigravity to be able to inspect or run docker containers." Type="Path" Display="advanced" Required="false" Mask="false">
     <Value>/var/run/docker.sock</Value>

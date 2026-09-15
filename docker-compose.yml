@@ -16,10 +16,15 @@ services:
       - ANTIGRAVITY_INSTANCE_NAME=${ANTIGRAVITY_INSTANCE_NAME:-unraid-server}
       - AUTO_START_DAEMON=${AUTO_START_DAEMON:-true}
       - AUTO_UPDATE=${AUTO_UPDATE:-true}
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,exec,size=4g
     volumes:
       # Persistent config, Google auth tokens (.gemini/), and home directory
+      # (Tip: Use /mnt/cache/... on Unraid for maximum performance)
       - ${APP_DATA_DIR:-/mnt/user/appdata/antigravity}:/config
       # Code workspaces and project directories
       - ${PROJECTS_DIR:-/mnt/user/projects}:/workspaces
+      # Host shared memory (RAM buffer for Chromium, browser tools, and compiler workers)
+      - /dev/shm:/dev/shm
       # Optional host Docker socket passthrough
       # - /var/run/docker.sock:/var/run/docker.sock
