@@ -22,11 +22,27 @@ def test_template():
     # Required top-level fields
     required_tags = [
         "Name", "Repository", "Registry", "Network", "Overview",
-        "Category", "Icon", "Shell"
+        "Description", "Category", "Icon", "Shell"
     ]
     for tag in required_tags:
         elem = root.find(tag)
         assert elem is not None and elem.text, f"Missing or empty required tag: <{tag}>"
+
+    # Validate Category compliance with Unraid CA
+    category_text = root.find("Category").text.strip()
+    # Unraid CA categories must not have invalid categories
+    invalid_categories = ["Development", "Utilities:"]
+    for inv in invalid_categories:
+        assert inv not in category_text.split(), f"Found invalid CA category entry '{inv}' in: {category_text}"
+    # Ensure recognized categories are present
+    assert "AI:" in category_text, f"Expected 'AI:' category in: {category_text}"
+    assert "Tools:Utilities" in category_text, f"Expected 'Tools:Utilities' category in: {category_text}"
+
+    # Validate Overview & Description focus on remote connection
+    overview_text = root.find("Overview").text.lower()
+    description_text = root.find("Description").text.lower()
+    assert "remote" in overview_text, "Overview must mention remote connection capabilities"
+    assert "remote" in description_text, "Description must mention remote connection capabilities"
 
     # Validate Config items
     configs = root.findall("Config")

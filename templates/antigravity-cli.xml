@@ -9,9 +9,25 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/hoveeman/antigravity-cli-docker/issues</Support>
   <Project>https://antigravity.google</Project>
-  <Overview>Google Antigravity CLI (agy) is an autonomous AI coding agent designed by Google DeepMind. This Docker container runs Antigravity headlessly on Unraid with full developer toolchains (Python 3, Node.js, Git, build-essential, Docker CLI). It supports remote connection via the Antigravity desktop app or browser interface, maintains persistent login credentials and workspace configurations across restarts, and automatically stays up to date with official Google releases.</Overview>
-  <Category>Development: Tools: Utilities:</Category>
-  <WebUI/>
+  <Overview>Headless remote connection server for Google Antigravity. Run the autonomous DeepMind AI coding agent 24/7 on your Unraid server and seamlessly connect from your Antigravity Desktop App, IDE, or browser. Offload heavy code indexing, compiler toolchains (Python 3, Node.js, Git, build-essential, Docker CLI), and multi-agent execution directly to your server with persistent credentials and automated Google updates.</Overview>
+  <Description>[b]Antigravity CLI (agy) Remote Execution Server[/b]&#xD;
+&#xD;
+Turn your Unraid server into a high-performance remote compute host for [b]Google Antigravity[/b]. Connect from the Antigravity Desktop App, IDE, or web browser to dispatch autonomous coding tasks, run background subagents, and compile software without consuming local laptop battery or CPU.&#xD;
+&#xD;
+[b]Key Remote Capabilities:[/b]&#xD;
+• [b]Seamless Remote Connection:[/b] Automatically hosts the [i]agy remote-control[/i] daemon, exposing this Unraid instance directly inside your Antigravity Desktop app and web dashboard under Remote Instances.&#xD;
+• [b]Persistent Authentication:[/b] One-time headless Google OAuth login saved directly in your appdata cache (/config), surviving container restarts and updates.&#xD;
+• [b]Full Developer Toolchains:[/b] Preloaded with Node.js 22 LTS, Python 3, pip, python-venv, Git, build-essential (gcc/g++/make), jq, and Docker CLI.&#xD;
+• [b]Zero-Friction Permissions:[/b] Maps cleanly to Unraid nobody:users (PUID=99, PGID=100) to ensure code modifications in /workspaces never cause permission issues.&#xD;
+• [b]RAM-Speed Builds:[/b] Pre-configured with host /dev/shm shared memory and high-speed tmpfs for ultra-fast compiler performance.&#xD;
+&#xD;
+[b]Initial One-Time Setup:[/b]&#xD;
+1. Start the container and open the Unraid WebGUI Console for this container.&#xD;
+2. Run [b]agy[/b] and follow the terminal link to sign in with your Google account.&#xD;
+3. Once authenticated, the container automatically registers your instance name and runs the remote daemon 24/7.&#xD;
+4. Open the Antigravity Desktop App or Web UI, go to Remote Instances, select your Unraid instance, and start coding!</Description>
+  <Category>AI: Productivity: Tools:Utilities</Category>
+  <WebUI>https://antigravity.google</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/hoveeman/antigravity-cli-docker/main/templates/antigravity-cli.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/hoveeman/antigravity-cli-docker/main/assets/icon.png</Icon>
   <ExtraParams>--tmpfs /tmp:rw,nosuid,nodev,exec,size=4g</ExtraParams>

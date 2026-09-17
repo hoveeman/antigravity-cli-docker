@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>Run Google Antigravity CLI as an autonomous AI coding agent directly on your Unraid server or Docker host.</strong>
+  <strong>High-performance headless remote connection server for Google Antigravity CLI (agy) on Unraid and Docker hosts.</strong>
 </p>
 
 <p align="center">
@@ -20,12 +20,13 @@
 
 ## Highlights
 
-- **Headless & Autonomous**: Runs Google's official Antigravity CLI (`agy`) as a background daemon on your Unraid server or NAS.
+- **24/7 Remote Connection Server**: Acts as an always-on remote compute node for Google Antigravity. Connect seamlessly from your local Antigravity Desktop App, Antigravity IDE, or browser interface to dispatch coding tasks and autonomous subagents.
+- **Zero Local Overhead**: Offload heavy code compilation, multi-file indexing, Git operations, and autonomous agent execution loops directly to your Unraid NAS—saving laptop battery and system memory.
+- **Headless & Autonomous**: Runs Google's official Antigravity CLI daemon (`agy remote-control serve`) headlessly on Unraid without needing a local desktop environment.
 - **Unraid Optimized**: Native `PUID=99` and `PGID=100` (`nobody:users`) permission mapping ensures files created or edited by the agent on your Unraid shares never trigger permission errors.
 - **Always Up to Date**: Automatically queries Google's release manifest on startup and periodically in the background, updating the `agy` flat binary seamlessly.
 - **Full Developer Toolchain**: Pre-equipped with Node.js 22 LTS, Python 3, pip, python-venv, Git, build-essential (gcc, g++, make), jq, curl, and the Docker CLI.
 - **Persistent State**: OAuth tokens (`.gemini/`), preferences, SSH keys, and bash history are safely isolated in `/config` (mapped to `/mnt/user/appdata/antigravity`).
-- **Antigravity Remote**: Seamlessly connect from the Antigravity Desktop App or Web UI and dispatch tasks directly to your Unraid server.
 
 ---
 
@@ -118,13 +119,82 @@ Because the container runs headlessly on Unraid without a desktop web browser, f
 
 ---
 
-## Connecting via Antigravity Remote
+---
 
-Once authenticated:
-1. Open your local **Antigravity Desktop App** or visit the web interface.
-2. Navigate to **Remote Control** / **Instances**.
-3. Select your instance (e.g. `unraid-server`).
-4. All tasks, autonomous subagents, and file edits will execute inside your Unraid container at `/workspaces`!
+## Remote Connection Capabilities & Architecture
+
+Antigravity CLI container transforms your Unraid server into a persistent remote agent host. Instead of burning your local computer's CPU, RAM, and battery running agents, compilers, or test suites locally, you connect remotely to this container.
+
+```
++-------------------------------------------------------------------------+
+| Local Computer (Mac, Windows, Linux)                                    |
+|                                                                         |
+|  [ Antigravity Desktop App / Antigravity IDE / Browser Interface ]      |
+|                                |                                        |
+|                                | Secure Google Cloud Tunnel / RPC       |
++--------------------------------v----------------------------------------+
+| Unraid Server (24/7 Compute Host)                                       |
+|                                                                         |
+|   antigravity-cli Docker Container (agy remote-control daemon)           |
+|                                                                         |
+|   +--------------------------+    +---------------------------------+   |
+|   | /workspaces              |    | Full Developer Toolchains       |   |
+|   | - Git repositories       |    | - Node 22, Python 3, Git, gcc   |   |
+|   | - Project files & shares |    | - Docker CLI, build tools       |   |
+|   +--------------------------+    +---------------------------------+   |
+|   +--------------------------+    +---------------------------------+   |
+|   | /config (.gemini/)       |    | RAM Acceleration                |   |
+|   | - OAuth tokens           |    | - /dev/shm shared memory        |   |
+|   | - Shell history & SSH    |    | - tmpfs RAM buffer (/tmp)       |   |
+|   +--------------------------+    +---------------------------------+   |
++-------------------------------------------------------------------------+
+```
+
+### Key Remote Capabilities
+
+1. **Persistent Remote Daemon**:
+   - The container runs `agy remote-control serve` in the background.
+   - You can dispatch long-running tasks, turn off your laptop or close your lid, and return later—the agent continues executing on Unraid uninterrupted.
+2. **Multi-Surface Client Support**:
+   - **Antigravity Desktop App (2.0)**: Connect directly from the desktop Electron app.
+   - **Antigravity IDE**: Use inline code actions and chat panels connected to the remote Unraid workspace.
+   - **Browser Web Interface ([antigravity.google](https://antigravity.google))**: Control and inspect agents from any web browser without installing local software.
+3. **Dedicated Unraid Server Resources**:
+   - Compiles, test runs, and multi-subagent swarms run on your Unraid server's hardware, keeping your local machine cool and silent.
+4. **Direct Access to Network Shares**:
+   - Any directory or share on your server mounted under `/workspaces` is immediately indexable and editable by the agent.
+
+---
+
+## How to Connect to Your Unraid Instance
+
+Once the container is authenticated:
+
+1. **Open your client**:
+   - Launch the **Antigravity Desktop App** or visit **[antigravity.google](https://antigravity.google)**.
+   - You can also click the **WebUI** link directly from the Unraid Docker dashboard.
+2. **Navigate to Remote Instances**:
+   - Open **Settings** or **Remote Control** -> **Instances**.
+   - Look for the instance name configured via `ANTIGRAVITY_INSTANCE_NAME` (default: `unraid-server`).
+3. **Attach to Workspace**:
+   - Select your project folder located in `/workspaces` (e.g. `/workspaces/my-project`).
+4. **Dispatch Tasks**:
+   - Prompt the agent, invoke slash commands (`/goal`, `/plan`), and coordinate subagents. All execution happens on your Unraid server.
+
+### Remote Control Daemon Commands & Diagnostics
+
+To inspect the remote connection status inside the container terminal or via `docker exec`:
+
+```bash
+# Check remote connection status and active clients
+docker exec -it antigravity agy remote-control status
+
+# View registered instance details
+docker exec -it antigravity agy remote-control info
+
+# Restart the remote daemon if needed
+docker exec -it antigravity agy remote-control restart
+```
 
 ---
 

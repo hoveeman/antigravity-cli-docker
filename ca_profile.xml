@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <CommunityApplications>
   <Profile>
-    Google Antigravity CLI (agy) is an autonomous AI coding agent designed by Google DeepMind. This Docker container runs Antigravity headlessly on Unraid with full developer toolchains (Python 3, Node.js, Git, build-essential, Docker CLI), supporting remote connection, persistent credentials, and automated updates.
+    Headless remote connection server for Google Antigravity. Run the autonomous DeepMind AI coding agent 24/7 on your Unraid server and seamlessly connect from your Antigravity Desktop App, IDE, or browser. Offload heavy code indexing, compiler toolchains, and multi-agent workflows directly to your Unraid NAS with persistent credentials.
   </Profile>
   <Icon>https://raw.githubusercontent.com/hoveeman/antigravity-cli-docker/main/assets/icon.png</Icon>
   <WebPage>https://github.com/hoveeman/antigravity-cli-docker</WebPage>
