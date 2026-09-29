@@ -91,4 +91,41 @@ fi
 echo "PASS: Update extraction logic successfully locates and installs 'antigravity' binary as 'agy'"
 rm -rf "$MOCK_UPDATE_DIR"
 
+# 6. Test restart_daemon function
+eval "$(sed -n '/^restart_daemon()/,/^}/p' "$ENTRYPOINT")"
+
+DAEMON_PID_FILE="$TMP_DIR/mock_daemon.pid"
+AUTO_START_DAEMON="true"
+
+# Test when no daemon is running
+if ! restart_daemon; then
+    echo "FAIL: restart_daemon failed when no daemon was active"
+    exit 1
+fi
+echo "PASS: restart_daemon handles inactive daemon gracefully"
+
+# Test when mock daemon is running
+sleep 300 &
+MOCK_PID=$!
+echo "$MOCK_PID" > "$DAEMON_PID_FILE"
+
+restart_daemon
+sleep 0.2
+
+if kill -0 "$MOCK_PID" 2>/dev/null; then
+    echo "FAIL: restart_daemon failed to terminate the running mock daemon"
+    kill -9 "$MOCK_PID" 2>/dev/null || true
+    exit 1
+fi
+echo "PASS: restart_daemon terminates running daemon process so supervisor can reload it"
+rm -f "$DAEMON_PID_FILE"
+
+# 7. Test AUTO_UPDATE_INTERVAL configuration
+INTERVAL_TEST=$(bash -c 'AUTO_UPDATE_INTERVAL=3600; source <(grep "^AUTO_UPDATE_INTERVAL=" entrypoint.sh); echo "$AUTO_UPDATE_INTERVAL"')
+if [ "$INTERVAL_TEST" != "3600" ]; then
+    echo "FAIL: AUTO_UPDATE_INTERVAL should respect environment override"
+    exit 1
+fi
+echo "PASS: AUTO_UPDATE_INTERVAL respects environment override"
+
 echo "=== All entrypoint tests passed successfully ==="

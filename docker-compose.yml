@@ -16,6 +16,7 @@ services:
       - ANTIGRAVITY_INSTANCE_NAME=${ANTIGRAVITY_INSTANCE_NAME:-unraid-server}
       - AUTO_START_DAEMON=${AUTO_START_DAEMON:-true}
       - AUTO_UPDATE=${AUTO_UPDATE:-true}
+      - AUTO_UPDATE_INTERVAL=${AUTO_UPDATE_INTERVAL:-86400}
     tmpfs:
       - /tmp:rw,nosuid,nodev,exec,size=4g
     volumes:

@@ -14,6 +14,9 @@ WORKSPACES_DIR=${MOCK_WORKSPACES:-/workspaces}
 ANTIGRAVITY_INSTANCE_NAME=${ANTIGRAVITY_INSTANCE_NAME:-unraid-server}
 AUTO_START_DAEMON=${AUTO_START_DAEMON:-true}
 AUTO_UPDATE=${AUTO_UPDATE:-true}
+AUTO_UPDATE_INTERVAL=${AUTO_UPDATE_INTERVAL:-86400}
+DAEMON_PID_FILE="/tmp/antigravity_daemon.pid"
+SHUTDOWN_REQUESTED="false"
 
 umask "$UMASK"
 
@@ -71,6 +74,18 @@ fi
 export HOME="$CONFIG_DIR"
 export PATH="$CONFIG_DIR/.local/bin:/usr/local/bin:$PATH"
 
+# Function to restart daemon if it is currently running
+restart_daemon() {
+    if [ "$AUTO_START_DAEMON" = "true" ] && [ -f "$DAEMON_PID_FILE" ]; then
+        local pid=""
+        pid=$(cat "$DAEMON_PID_FILE" 2>/dev/null || true)
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            echo "--> Restarting Antigravity Remote Control daemon to apply update..."
+            kill -TERM "$pid" 2>/dev/null || true
+        fi
+    fi
+}
+
 # Function to check and update Antigravity CLI
 update_antigravity() {
     if [ "$AUTO_UPDATE" != "true" ]; then
@@ -112,8 +127,10 @@ update_antigravity() {
                 INSTALL_BIN=$(find "$TMP_EXTRACT" -type f \( -name agy -o -name antigravity \) -perm /111 2>/dev/null | head -n1 || true)
                 if [ -n "$INSTALL_BIN" ]; then
                     mv "$INSTALL_BIN" /usr/local/bin/agy
-                    chmod 755 /usr/local/bin/agy
+                    chmod 775 /usr/local/bin/agy
+                    chgrp "$APP_GROUP" /usr/local/bin/agy 2>/dev/null || true
                     echo "--> Successfully updated Antigravity CLI to $REMOTE_VERSION"
+                    restart_daemon
                 else
                     echo "Warning: Could not locate 'agy' or 'antigravity' binary in update archive."
                 fi
@@ -140,11 +157,14 @@ else
     echo "Warning: 'agy' command not found in PATH."
 fi
 
-# Background auto-updater (every 24 hours)
+# Background auto-updater
 if [ "$AUTO_UPDATE" = "true" ]; then
     (
-        while true; do
-            sleep 86400
+        while [ "$SHUTDOWN_REQUESTED" != "true" ]; do
+            sleep "$AUTO_UPDATE_INTERVAL"
+            if [ "$SHUTDOWN_REQUESTED" = "true" ]; then
+                break
+            fi
             update_antigravity || true
         done
     ) &
@@ -168,13 +188,23 @@ is_authenticated() {
 
 # Graceful termination handler
 cleanup() {
+    SHUTDOWN_REQUESTED="true"
     echo "Received termination signal. Shutting down Antigravity daemon..."
     if [ -n "${UPDATER_PID:-}" ]; then
         kill "$UPDATER_PID" 2>/dev/null || true
     fi
+    if [ -f "$DAEMON_PID_FILE" ]; then
+        local pid
+        pid=$(cat "$DAEMON_PID_FILE" 2>/dev/null || true)
+        if [ -n "$pid" ]; then
+            kill "$pid" 2>/dev/null || true
+        fi
+        rm -f "$DAEMON_PID_FILE"
+    fi
     if [ -n "${DAEMON_PID:-}" ]; then
         kill "$DAEMON_PID" 2>/dev/null || true
     fi
+    pkill -f "agy remote-control serve" 2>/dev/null || true
     if [ -n "${WAIT_PID:-}" ]; then
         kill "$WAIT_PID" 2>/dev/null || true
     fi
@@ -250,24 +280,43 @@ if [ -n "$ANTIGRAVITY_INSTANCE_NAME" ] && command -v agy >/dev/null 2>&1; then
     fi
 fi
 
-# Start remote control daemon directly in foreground if requested
+# Start remote control daemon directly with supervisor loop if requested
 if [ "$AUTO_START_DAEMON" = "true" ] && command -v agy >/dev/null 2>&1; then
-    echo "Starting Antigravity Remote Control daemon directly (agy remote-control serve)..."
-    echo "Antigravity CLI is running and ready. Connected to Antigravity Remote."
-    if [ "$(id -u)" = "0" ]; then
-        sudo -E -u "$APP_USER" env HOME="$CONFIG_DIR" PATH="$PATH" agy remote-control serve &
-    else
-        agy remote-control serve &
-    fi
-    DAEMON_PID=$!
-    wait "$DAEMON_PID" 2>/dev/null || true
-    echo "Notice: Antigravity Remote Control daemon exited."
+    echo "=== Starting Antigravity CLI Daemon Supervisor ==="
+    while [ "$SHUTDOWN_REQUESTED" != "true" ]; do
+        echo "Starting Antigravity Remote Control daemon directly (agy remote-control serve)..."
+        echo "Antigravity CLI is running and ready. Connected to Antigravity Remote."
+        if [ "$(id -u)" = "0" ]; then
+            sudo -E -u "$APP_USER" env HOME="$CONFIG_DIR" PATH="$PATH" agy remote-control serve &
+        else
+            agy remote-control serve &
+        fi
+        DAEMON_PID=$!
+        echo "$DAEMON_PID" > "$DAEMON_PID_FILE"
+
+        wait "$DAEMON_PID" 2>/dev/null || true
+        rm -f "$DAEMON_PID_FILE"
+
+        if [ "$SHUTDOWN_REQUESTED" = "true" ]; then
+            break
+        fi
+
+        echo "Notice: Antigravity Remote Control daemon exited or relaunch requested."
+        
+        # Check for any new updates before restarting the daemon
+        update_antigravity || true
+
+        echo "Restarting Antigravity Remote Control daemon in 2 seconds..."
+        sleep 2 &
+        WAIT_PID=$!
+        wait "$WAIT_PID" 2>/dev/null || true
+    done
 fi
 
 echo "Antigravity CLI container is running in idle loop. Press Ctrl+C or stop container to terminate."
 
 # Keep container alive and responsive to traps
-while true; do
+while [ "$SHUTDOWN_REQUESTED" != "true" ]; do
     sleep 3600 &
     WAIT_PID=$!
     wait "$WAIT_PID" 2>/dev/null || true

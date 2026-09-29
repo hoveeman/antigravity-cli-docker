@@ -208,8 +208,9 @@ docker exec -it antigravity agy remote-control restart
 | `PGID` | `100` | Group ID for file ownership inside container (matches Unraid `users`). |
 | `TZ` | `America/New_York` | Container timezone for logs. |
 | `ANTIGRAVITY_INSTANCE_NAME` | `unraid-server` | Instance name displayed in Antigravity Remote. |
-| `AUTO_START_DAEMON` | `true` | Automatically starts `agy remote-control` daemon on boot. |
-| `AUTO_UPDATE` | `true` | Checks for and installs official Google CLI updates. |
+| `AUTO_START_DAEMON` | `true` | Automatically starts `agy remote-control` daemon under a supervisor loop on boot. |
+| `AUTO_UPDATE` | `true` | Checks for and installs official Google CLI updates, automatically reloading the daemon. |
+| `AUTO_UPDATE_INTERVAL` | `86400` | Periodic check interval in seconds (default 24 hours). |
 | `UMASK` | `002` | File creation mask. |
 
 ### Volume Mounts & Storage
