@@ -211,6 +211,7 @@ docker exec -it antigravity agy remote-control restart
 | `AUTO_START_DAEMON` | `true` | Automatically starts `agy remote-control` daemon under a supervisor loop on boot. |
 | `AUTO_UPDATE` | `true` | Checks for and installs official Google CLI updates, automatically reloading the daemon. |
 | `AUTO_UPDATE_INTERVAL` | `86400` | Periodic check interval in seconds (default 24 hours). |
+| `ANTIGRAVITY_DOWNLOAD_URL` | *(empty)* | Optional direct `.tar.gz` download URL to pin a specific Google CLI build (disables auto-updates). |
 | `UMASK` | `002` | File creation mask. |
 
 ### Volume Mounts & Storage
@@ -221,6 +222,18 @@ docker exec -it antigravity agy remote-control restart
 | `/workspaces` | `/mnt/cache/projects` | Working directory where code repositories and projects reside. |
 | `/dev/shm` | `/dev/shm` | Host shared memory RAM pool for Chromium, browser tools, and build workers. |
 | `/var/run/docker.sock` *(Optional)* | `/var/run/docker.sock` | Pass host Docker socket to manage containers from Antigravity. |
+
+### Pinning a Specific CLI Version
+
+By default, the container automatically tracks Google's latest releases. If you need to lock the container to a specific build (e.g. `1.2.13`), provide its direct `.tar.gz` download link using `ANTIGRAVITY_DOWNLOAD_URL`:
+
+```bash
+-e ANTIGRAVITY_DOWNLOAD_URL=https://storage.googleapis.com/antigravity-public/antigravity-cli/1.2.13-HASH/linux-x64/cli_linux_x64.tar.gz
+```
+
+When set:
+- The container downloads and installs the exact build on boot (cached so subsequent reboots avoid re-downloading).
+- Upstream auto-updates (`AUTO_UPDATE`) are automatically disabled so your version remains locked.
 
 ---
 

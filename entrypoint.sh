@@ -11,10 +11,13 @@ PGID=${PGID:-100}
 UMASK=${UMASK:-002}
 CONFIG_DIR=${MOCK_CONFIG:-/config}
 WORKSPACES_DIR=${MOCK_WORKSPACES:-/workspaces}
+INSTALL_BIN_DIR=${MOCK_BIN_DIR:-/usr/local/bin}
 ANTIGRAVITY_INSTANCE_NAME=${ANTIGRAVITY_INSTANCE_NAME:-unraid-server}
 AUTO_START_DAEMON=${AUTO_START_DAEMON:-true}
 AUTO_UPDATE=${AUTO_UPDATE:-true}
 AUTO_UPDATE_INTERVAL=${AUTO_UPDATE_INTERVAL:-86400}
+ANTIGRAVITY_VERSION=${ANTIGRAVITY_VERSION:-}
+ANTIGRAVITY_DOWNLOAD_URL=${ANTIGRAVITY_DOWNLOAD_URL:-}
 DAEMON_PID_FILE="/tmp/antigravity_daemon.pid"
 SHUTDOWN_REQUESTED="false"
 
@@ -26,6 +29,12 @@ echo " Instance Name: $ANTIGRAVITY_INSTANCE_NAME"
 echo " PUID: $PUID | PGID: $PGID"
 echo " Config Dir: $CONFIG_DIR"
 echo " Workspaces Dir: $WORKSPACES_DIR"
+if [ -n "$ANTIGRAVITY_VERSION" ]; then
+    echo " Target Version: $ANTIGRAVITY_VERSION"
+fi
+if [ -n "$ANTIGRAVITY_DOWNLOAD_URL" ]; then
+    echo " Custom Download URL: $ANTIGRAVITY_DOWNLOAD_URL"
+fi
 echo "=================================================================="
 
 # Dry run mode check for testing
@@ -35,7 +44,7 @@ if [ "${1:-}" = "--dry-run-test" ] || [ "${TEST_DRY_RUN:-0}" = "1" ]; then
 fi
 
 # Ensure directories exist
-mkdir -p "$CONFIG_DIR" "$WORKSPACES_DIR" "$CONFIG_DIR/.local/bin" "$CONFIG_DIR/.gemini"
+mkdir -p "$CONFIG_DIR" "$WORKSPACES_DIR" "$CONFIG_DIR/.local/bin" "$CONFIG_DIR/.gemini" "$INSTALL_BIN_DIR"
 
 # Set up user and group matching PUID/PGID if running as root
 APP_USER="antigravity"
@@ -66,13 +75,13 @@ if [ "$(id -u)" = "0" ]; then
     # Fix ownership of config directory and binary path
     chown -R "$PUID:$PGID" "$CONFIG_DIR" || true
     chmod -R u+rwX,go+rX "$CONFIG_DIR" || true
-    chgrp -R "$APP_GROUP" /usr/local/bin || true
-    chmod 775 /usr/local/bin || true
+    chgrp -R "$APP_GROUP" "$INSTALL_BIN_DIR" || true
+    chmod 775 "$INSTALL_BIN_DIR" || true
 fi
 
 # Export environment paths
 export HOME="$CONFIG_DIR"
-export PATH="$CONFIG_DIR/.local/bin:/usr/local/bin:$PATH"
+export PATH="$CONFIG_DIR/.local/bin:$INSTALL_BIN_DIR:$PATH"
 
 # Function to restart daemon if it is currently running
 restart_daemon() {
@@ -86,21 +95,128 @@ restart_daemon() {
     fi
 }
 
+# Architecture detection helper
+detect_arch() {
+    ARCH="amd64"
+    PKG_ARCH="x64"
+    case "$(uname -m)" in
+        x86_64|amd64)
+            ARCH="amd64"
+            PKG_ARCH="x64"
+            ;;
+        aarch64|arm64)
+            ARCH="arm64"
+            PKG_ARCH="arm64"
+            ;;
+        *)
+            ARCH="unknown"
+            PKG_ARCH="unknown"
+            ;;
+    esac
+}
+
+# Resolve target version to GitHub release download URL if ANTIGRAVITY_VERSION is pinned
+resolve_version_url() {
+    if [ -n "$ANTIGRAVITY_VERSION" ] && [ "$ANTIGRAVITY_VERSION" != "latest" ] && [ -z "$ANTIGRAVITY_DOWNLOAD_URL" ]; then
+        detect_arch
+        local clean_version="${ANTIGRAVITY_VERSION#v}"
+        if [ "$PKG_ARCH" != "unknown" ]; then
+            ANTIGRAVITY_DOWNLOAD_URL="https://github.com/google-antigravity/antigravity-cli/releases/download/${clean_version}/agy_cli_linux_${PKG_ARCH}.tar.gz"
+        else
+            echo "Warning: Unsupported architecture $(uname -m) for ANTIGRAVITY_VERSION."
+        fi
+    fi
+}
+
+# Function to install Antigravity CLI from a custom or pinned download URL
+install_from_download_url() {
+    resolve_version_url
+    if [ -z "$ANTIGRAVITY_DOWNLOAD_URL" ]; then
+        return 0
+    fi
+
+    local current_ver=""
+    if command -v agy >/dev/null 2>&1; then
+        current_ver=$(agy --version 2>/dev/null | head -n1 || true)
+    fi
+
+    if [ -n "$ANTIGRAVITY_VERSION" ] && [ "$ANTIGRAVITY_VERSION" != "latest" ]; then
+        local target_ver="${ANTIGRAVITY_VERSION#v}"
+        if [ "$current_ver" = "$target_ver" ]; then
+            echo "Antigravity CLI is already at pinned version $target_ver."
+            return 0
+        fi
+    fi
+
+    local marker_file="$CONFIG_DIR/.gemini/antigravity-cli/.installed_download_url"
+    if [ -f "$marker_file" ] && [ "$(cat "$marker_file" 2>/dev/null || true)" = "$ANTIGRAVITY_DOWNLOAD_URL" ] && [ -n "$current_ver" ]; then
+        echo "Antigravity CLI is already installed from specified ANTIGRAVITY_DOWNLOAD_URL ($current_ver)."
+        return 0
+    fi
+
+    echo "=== Installing Antigravity CLI ==="
+    if [ -n "$ANTIGRAVITY_VERSION" ] && [ "$ANTIGRAVITY_VERSION" != "latest" ]; then
+        echo "Target Version: ${ANTIGRAVITY_VERSION#v} (current: ${current_ver:-none})"
+    fi
+    echo "Download URL  : $ANTIGRAVITY_DOWNLOAD_URL"
+
+    TMP_DOWNLOAD=$(mktemp /tmp/agy_custom.XXXXXX)
+    TMP_EXTRACT=$(mktemp -d /tmp/agy_extract.XXXXXX)
+
+    if curl -fsSL --connect-timeout 10 --max-time 180 "$ANTIGRAVITY_DOWNLOAD_URL" -o "$TMP_DOWNLOAD"; then
+        INSTALL_BIN=""
+        if tar -tzf "$TMP_DOWNLOAD" >/dev/null 2>&1; then
+            tar -xzf "$TMP_DOWNLOAD" -C "$TMP_EXTRACT"
+            INSTALL_BIN=$(find "$TMP_EXTRACT" -type f \( -name agy -o -name antigravity \) -perm /111 2>/dev/null | head -n1 || true)
+            if [ -z "$INSTALL_BIN" ]; then
+                INSTALL_BIN=$(find "$TMP_EXTRACT" -type f \( -name agy -o -name antigravity \) 2>/dev/null | head -n1 || true)
+            fi
+        else
+            INSTALL_BIN="$TMP_DOWNLOAD"
+        fi
+
+        if [ -n "$INSTALL_BIN" ]; then
+            mv "$INSTALL_BIN" "$INSTALL_BIN_DIR/agy"
+            chmod 775 "$INSTALL_BIN_DIR/agy"
+            chgrp "$APP_GROUP" "$INSTALL_BIN_DIR/agy" 2>/dev/null || true
+            mkdir -p "$(dirname "$marker_file")"
+            echo "$ANTIGRAVITY_DOWNLOAD_URL" > "$marker_file"
+            echo "--> Successfully installed Antigravity CLI (${ANTIGRAVITY_VERSION:-custom URL})."
+            restart_daemon
+        else
+            echo "Warning: Could not locate 'agy' or 'antigravity' binary in download archive."
+        fi
+    else
+        echo "Warning: Failed to download Antigravity CLI from $ANTIGRAVITY_DOWNLOAD_URL."
+    fi
+
+    rm -rf "$TMP_DOWNLOAD" "$TMP_EXTRACT"
+}
+
 # Function to check and update Antigravity CLI
 update_antigravity() {
+    resolve_version_url
+    if [ -n "$ANTIGRAVITY_VERSION" ] && [ "$ANTIGRAVITY_VERSION" != "latest" ]; then
+        echo "Notice: ANTIGRAVITY_VERSION is pinned to $ANTIGRAVITY_VERSION. Skipping upstream auto-update check."
+        return 0
+    fi
+
+    if [ -n "$ANTIGRAVITY_DOWNLOAD_URL" ]; then
+        echo "Notice: ANTIGRAVITY_DOWNLOAD_URL is configured. Skipping upstream auto-update check."
+        return 0
+    fi
+
     if [ "$AUTO_UPDATE" != "true" ]; then
         return 0
     fi
 
     echo "=== Checking for Google Antigravity CLI updates ==="
     
-    # Detect system architecture
-    ARCH="amd64"
-    case "$(uname -m)" in
-        x86_64|amd64) ARCH="amd64" ;;
-        aarch64|arm64) ARCH="arm64" ;;
-        *) echo "Warning: Unknown architecture $(uname -m), skipping update check." ; return 0 ;;
-    esac
+    detect_arch
+    if [ "$ARCH" = "unknown" ]; then
+        echo "Warning: Unknown architecture $(uname -m), skipping update check."
+        return 0
+    fi
 
     MANIFEST_URL="https://antigravity-cli-auto-updater-974169037036.us-central1.run.app/manifests/linux_${ARCH}.json"
     
@@ -126,9 +242,9 @@ update_antigravity() {
                 tar -xzf "$TMP_TGZ" -C "$TMP_EXTRACT"
                 INSTALL_BIN=$(find "$TMP_EXTRACT" -type f \( -name agy -o -name antigravity \) -perm /111 2>/dev/null | head -n1 || true)
                 if [ -n "$INSTALL_BIN" ]; then
-                    mv "$INSTALL_BIN" /usr/local/bin/agy
-                    chmod 775 /usr/local/bin/agy
-                    chgrp "$APP_GROUP" /usr/local/bin/agy 2>/dev/null || true
+                    mv "$INSTALL_BIN" "$INSTALL_BIN_DIR/agy"
+                    chmod 775 "$INSTALL_BIN_DIR/agy"
+                    chgrp "$APP_GROUP" "$INSTALL_BIN_DIR/agy" 2>/dev/null || true
                     echo "--> Successfully updated Antigravity CLI to $REMOTE_VERSION"
                     restart_daemon
                 else
@@ -147,8 +263,13 @@ update_antigravity() {
     fi
 }
 
-# Run initial update check
-update_antigravity || true
+# Initial installation / update check
+resolve_version_url
+if [ -n "$ANTIGRAVITY_DOWNLOAD_URL" ]; then
+    install_from_download_url || true
+else
+    update_antigravity || true
+fi
 
 echo "=== Google Antigravity Version ==="
 if command -v agy >/dev/null 2>&1; then
@@ -158,7 +279,7 @@ else
 fi
 
 # Background auto-updater
-if [ "$AUTO_UPDATE" = "true" ]; then
+if [ "$AUTO_UPDATE" = "true" ] && [ -z "$ANTIGRAVITY_DOWNLOAD_URL" ] && { [ -z "$ANTIGRAVITY_VERSION" ] || [ "$ANTIGRAVITY_VERSION" = "latest" ]; }; then
     (
         while [ "$SHUTDOWN_REQUESTED" != "true" ]; do
             sleep "$AUTO_UPDATE_INTERVAL"
@@ -304,7 +425,12 @@ if [ "$AUTO_START_DAEMON" = "true" ] && command -v agy >/dev/null 2>&1; then
         echo "Notice: Antigravity Remote Control daemon exited or relaunch requested."
         
         # Check for any new updates before restarting the daemon
-        update_antigravity || true
+        resolve_version_url
+        if [ -n "$ANTIGRAVITY_DOWNLOAD_URL" ]; then
+            install_from_download_url || true
+        else
+            update_antigravity || true
+        fi
 
         echo "Restarting Antigravity Remote Control daemon in 2 seconds..."
         sleep 2 &

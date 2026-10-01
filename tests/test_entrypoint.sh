@@ -128,4 +128,64 @@ if [ "$INTERVAL_TEST" != "3600" ]; then
 fi
 echo "PASS: AUTO_UPDATE_INTERVAL respects environment override"
 
+# 8. Test install_from_download_url
+eval "$(sed -n '/^install_from_download_url()/,/^}/p' "$ENTRYPOINT")"
+
+# Test empty URL
+ANTIGRAVITY_DOWNLOAD_URL=""
+if ! install_from_download_url; then
+    echo "FAIL: install_from_download_url should return 0 when ANTIGRAVITY_DOWNLOAD_URL is empty"
+    exit 1
+fi
+echo "PASS: install_from_download_url handles empty URL gracefully"
+
+# Test installing from mock tarball file:// URL
+CUSTOM_MOCK_DIR=$(mktemp -d)
+CUSTOM_PKG="$CUSTOM_MOCK_DIR/custom_agy.tar.gz"
+echo '#!/bin/sh' > "$CUSTOM_MOCK_DIR/agy"
+echo 'echo 1.2.13-pinned' >> "$CUSTOM_MOCK_DIR/agy"
+chmod 755 "$CUSTOM_MOCK_DIR/agy"
+tar -czf "$CUSTOM_PKG" -C "$CUSTOM_MOCK_DIR" agy
+
+CUSTOM_TEST_BIN_DIR="$TMP_DIR/custom_bin"
+mkdir -p "$CUSTOM_TEST_BIN_DIR"
+INSTALL_BIN_DIR="$CUSTOM_TEST_BIN_DIR"
+CONFIG_DIR="$MOCK_CONFIG"
+APP_GROUP="$(id -gn)"
+AUTO_START_DAEMON="false"
+ANTIGRAVITY_DOWNLOAD_URL="file://$CUSTOM_PKG"
+
+install_from_download_url
+
+if [ ! -f "$CUSTOM_TEST_BIN_DIR/agy" ]; then
+    echo "FAIL: Custom binary not found at $CUSTOM_TEST_BIN_DIR/agy"
+    exit 1
+fi
+
+CUSTOM_OUTPUT=$("$CUSTOM_TEST_BIN_DIR/agy")
+if [ "$CUSTOM_OUTPUT" != "1.2.13-pinned" ]; then
+    echo "FAIL: Expected '1.2.13-pinned', got '$CUSTOM_OUTPUT'"
+    exit 1
+fi
+echo "PASS: install_from_download_url successfully installs pinned binary from tarball URL"
+
+# Verify marker file
+MARKER_FILE="$MOCK_CONFIG/.gemini/antigravity-cli/.installed_download_url"
+if [ ! -f "$MARKER_FILE" ] || [ "$(cat "$MARKER_FILE")" != "file://$CUSTOM_PKG" ]; then
+    echo "FAIL: Marker file was not correctly recorded"
+    exit 1
+fi
+echo "PASS: install_from_download_url records marker file to prevent redundant downloads"
+rm -rf "$CUSTOM_MOCK_DIR"
+
+# 9. Test that update_antigravity skips when ANTIGRAVITY_DOWNLOAD_URL is set
+eval "$(sed -n '/^update_antigravity()/,/^}/p' "$ENTRYPOINT")"
+ANTIGRAVITY_DOWNLOAD_URL="https://example.com/custom.tar.gz"
+SKIP_OUTPUT=$(update_antigravity)
+if ! echo "$SKIP_OUTPUT" | grep -q "ANTIGRAVITY_DOWNLOAD_URL is configured"; then
+    echo "FAIL: update_antigravity did not skip when ANTIGRAVITY_DOWNLOAD_URL was set"
+    exit 1
+fi
+echo "PASS: update_antigravity skips upstream auto-updates when ANTIGRAVITY_DOWNLOAD_URL is set"
+
 echo "=== All entrypoint tests passed successfully ==="

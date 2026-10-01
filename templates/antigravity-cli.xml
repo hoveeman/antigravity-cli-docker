@@ -67,6 +67,9 @@ Turn your Unraid server into a high-performance remote compute host for [b]Googl
   <Config Name="Auto Update Interval" Target="AUTO_UPDATE_INTERVAL" Key="AUTO_UPDATE_INTERVAL" Default="86400" Description="Interval in seconds between periodic Google CLI update checks (default: 86400 = 24 hours)." Type="Variable" Display="advanced" Required="false" Mask="false">
     <Value>86400</Value>
   </Config>
+  <Config Name="Download URL" Target="ANTIGRAVITY_DOWNLOAD_URL" Key="ANTIGRAVITY_DOWNLOAD_URL" Default="" Description="Optional direct .tar.gz download URL to pin a specific Google Antigravity CLI version. Disables automatic updates when set." Type="Variable" Display="advanced" Required="false" Mask="false">
+    <Value></Value>
+  </Config>
   <Config Name="Timezone" Target="TZ" Key="TZ" Default="America/New_York" Description="Container timezone for accurate log timestamps." Type="Variable" Display="advanced" Required="false" Mask="false">
     <Value>America/New_York</Value>
   </Config>
