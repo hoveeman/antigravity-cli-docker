@@ -17,6 +17,7 @@ services:
       - AUTO_START_DAEMON=${AUTO_START_DAEMON:-true}
       - AUTO_UPDATE=${AUTO_UPDATE:-true}
       - AUTO_UPDATE_INTERVAL=${AUTO_UPDATE_INTERVAL:-86400}
+      - ANTIGRAVITY_VERSION=${ANTIGRAVITY_VERSION:-}
       - ANTIGRAVITY_DOWNLOAD_URL=${ANTIGRAVITY_DOWNLOAD_URL:-}
     tmpfs:
       - /tmp:rw,nosuid,nodev,exec,size=4g

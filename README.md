@@ -211,6 +211,7 @@ docker exec -it antigravity agy remote-control restart
 | `AUTO_START_DAEMON` | `true` | Automatically starts `agy remote-control` daemon under a supervisor loop on boot. |
 | `AUTO_UPDATE` | `true` | Checks for and installs official Google CLI updates, automatically reloading the daemon. |
 | `AUTO_UPDATE_INTERVAL` | `86400` | Periodic check interval in seconds (default 24 hours). |
+| `ANTIGRAVITY_VERSION` | *(empty)* | Pin a specific version (e.g. `1.2.13`). Automatically downloads GitHub release assets. |
 | `ANTIGRAVITY_DOWNLOAD_URL` | *(empty)* | Optional direct `.tar.gz` download URL to pin a specific Google CLI build (disables auto-updates). |
 | `UMASK` | `002` | File creation mask. |
 
@@ -225,14 +226,23 @@ docker exec -it antigravity agy remote-control restart
 
 ### Pinning a Specific CLI Version
 
-By default, the container automatically tracks Google's latest releases. If you need to lock the container to a specific build (e.g. `1.2.13`), provide its direct `.tar.gz` download link using `ANTIGRAVITY_DOWNLOAD_URL`:
+By default, the container automatically tracks Google's latest releases. If you need to lock the container to a specific version (e.g. `1.2.13`):
 
+#### Option 1: Using `ANTIGRAVITY_VERSION` (Recommended)
+Simply pass the version number:
 ```bash
--e ANTIGRAVITY_DOWNLOAD_URL=https://storage.googleapis.com/antigravity-public/antigravity-cli/1.2.13-HASH/linux-x64/cli_linux_x64.tar.gz
+-e ANTIGRAVITY_VERSION=1.2.13
+```
+The container automatically downloads the appropriate Linux build for your architecture (x86_64 or ARM64) from official GitHub release assets and locks to it.
+
+#### Option 2: Using `ANTIGRAVITY_DOWNLOAD_URL`
+Provide a custom direct `.tar.gz` download link:
+```bash
+-e ANTIGRAVITY_DOWNLOAD_URL=https://github.com/google-antigravity/antigravity-cli/releases/download/1.2.13/agy_cli_linux_x64.tar.gz
 ```
 
-When set:
-- The container downloads and installs the exact build on boot (cached so subsequent reboots avoid re-downloading).
+When either option is set:
+- The container installs the pinned build on boot (cached so subsequent reboots avoid re-downloading).
 - Upstream auto-updates (`AUTO_UPDATE`) are automatically disabled so your version remains locked.
 
 ---

@@ -117,7 +117,7 @@ detect_arch() {
 
 # Resolve target version to GitHub release download URL if ANTIGRAVITY_VERSION is pinned
 resolve_version_url() {
-    if [ -n "$ANTIGRAVITY_VERSION" ] && [ "$ANTIGRAVITY_VERSION" != "latest" ] && [ -z "$ANTIGRAVITY_DOWNLOAD_URL" ]; then
+    if [ -n "${ANTIGRAVITY_VERSION:-}" ] && [ "${ANTIGRAVITY_VERSION:-}" != "latest" ] && [ -z "${ANTIGRAVITY_DOWNLOAD_URL:-}" ]; then
         detect_arch
         local clean_version="${ANTIGRAVITY_VERSION#v}"
         if [ "$PKG_ARCH" != "unknown" ]; then
@@ -131,7 +131,7 @@ resolve_version_url() {
 # Function to install Antigravity CLI from a custom or pinned download URL
 install_from_download_url() {
     resolve_version_url
-    if [ -z "$ANTIGRAVITY_DOWNLOAD_URL" ]; then
+    if [ -z "${ANTIGRAVITY_DOWNLOAD_URL:-}" ]; then
         return 0
     fi
 
@@ -140,7 +140,7 @@ install_from_download_url() {
         current_ver=$(agy --version 2>/dev/null | head -n1 || true)
     fi
 
-    if [ -n "$ANTIGRAVITY_VERSION" ] && [ "$ANTIGRAVITY_VERSION" != "latest" ]; then
+    if [ -n "${ANTIGRAVITY_VERSION:-}" ] && [ "${ANTIGRAVITY_VERSION:-}" != "latest" ]; then
         local target_ver="${ANTIGRAVITY_VERSION#v}"
         if [ "$current_ver" = "$target_ver" ]; then
             echo "Antigravity CLI is already at pinned version $target_ver."
@@ -155,7 +155,7 @@ install_from_download_url() {
     fi
 
     echo "=== Installing Antigravity CLI ==="
-    if [ -n "$ANTIGRAVITY_VERSION" ] && [ "$ANTIGRAVITY_VERSION" != "latest" ]; then
+    if [ -n "${ANTIGRAVITY_VERSION:-}" ] && [ "${ANTIGRAVITY_VERSION:-}" != "latest" ]; then
         echo "Target Version: ${ANTIGRAVITY_VERSION#v} (current: ${current_ver:-none})"
     fi
     echo "Download URL  : $ANTIGRAVITY_DOWNLOAD_URL"
@@ -196,12 +196,12 @@ install_from_download_url() {
 # Function to check and update Antigravity CLI
 update_antigravity() {
     resolve_version_url
-    if [ -n "$ANTIGRAVITY_VERSION" ] && [ "$ANTIGRAVITY_VERSION" != "latest" ]; then
+    if [ -n "${ANTIGRAVITY_VERSION:-}" ] && [ "${ANTIGRAVITY_VERSION:-}" != "latest" ]; then
         echo "Notice: ANTIGRAVITY_VERSION is pinned to $ANTIGRAVITY_VERSION. Skipping upstream auto-update check."
         return 0
     fi
 
-    if [ -n "$ANTIGRAVITY_DOWNLOAD_URL" ]; then
+    if [ -n "${ANTIGRAVITY_DOWNLOAD_URL:-}" ]; then
         echo "Notice: ANTIGRAVITY_DOWNLOAD_URL is configured. Skipping upstream auto-update check."
         return 0
     fi

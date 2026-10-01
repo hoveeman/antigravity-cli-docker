@@ -129,9 +129,12 @@ fi
 echo "PASS: AUTO_UPDATE_INTERVAL respects environment override"
 
 # 8. Test install_from_download_url
+eval "$(sed -n '/^detect_arch()/,/^}/p' "$ENTRYPOINT")"
+eval "$(sed -n '/^resolve_version_url()/,/^}/p' "$ENTRYPOINT")"
 eval "$(sed -n '/^install_from_download_url()/,/^}/p' "$ENTRYPOINT")"
 
 # Test empty URL
+ANTIGRAVITY_VERSION=""
 ANTIGRAVITY_DOWNLOAD_URL=""
 if ! install_from_download_url; then
     echo "FAIL: install_from_download_url should return 0 when ANTIGRAVITY_DOWNLOAD_URL is empty"
@@ -180,6 +183,7 @@ rm -rf "$CUSTOM_MOCK_DIR"
 
 # 9. Test that update_antigravity skips when ANTIGRAVITY_DOWNLOAD_URL is set
 eval "$(sed -n '/^update_antigravity()/,/^}/p' "$ENTRYPOINT")"
+ANTIGRAVITY_VERSION=""
 ANTIGRAVITY_DOWNLOAD_URL="https://example.com/custom.tar.gz"
 SKIP_OUTPUT=$(update_antigravity)
 if ! echo "$SKIP_OUTPUT" | grep -q "ANTIGRAVITY_DOWNLOAD_URL is configured"; then
@@ -187,5 +191,51 @@ if ! echo "$SKIP_OUTPUT" | grep -q "ANTIGRAVITY_DOWNLOAD_URL is configured"; the
     exit 1
 fi
 echo "PASS: update_antigravity skips upstream auto-updates when ANTIGRAVITY_DOWNLOAD_URL is set"
+
+# 10. Test resolve_version_url
+eval "$(sed -n '/^detect_arch()/,/^}/p' "$ENTRYPOINT")"
+eval "$(sed -n '/^resolve_version_url()/,/^}/p' "$ENTRYPOINT")"
+
+ANTIGRAVITY_DOWNLOAD_URL=""
+ANTIGRAVITY_VERSION="1.2.13"
+resolve_version_url
+
+detect_arch
+EXPECTED_URL="https://github.com/google-antigravity/antigravity-cli/releases/download/1.2.13/agy_cli_linux_${PKG_ARCH}.tar.gz"
+if [ "$ANTIGRAVITY_DOWNLOAD_URL" != "$EXPECTED_URL" ]; then
+    echo "FAIL: Expected $EXPECTED_URL, got $ANTIGRAVITY_DOWNLOAD_URL"
+    exit 1
+fi
+echo "PASS: resolve_version_url constructs official GitHub release URL for ANTIGRAVITY_VERSION"
+
+# Test leading 'v' stripping
+ANTIGRAVITY_DOWNLOAD_URL=""
+ANTIGRAVITY_VERSION="v1.2.13"
+resolve_version_url
+if [ "$ANTIGRAVITY_DOWNLOAD_URL" != "$EXPECTED_URL" ]; then
+    echo "FAIL: Failed to strip leading 'v' from version"
+    exit 1
+fi
+echo "PASS: resolve_version_url strips leading 'v' correctly"
+
+# Test 'latest' does not construct pinned URL
+ANTIGRAVITY_DOWNLOAD_URL=""
+ANTIGRAVITY_VERSION="latest"
+resolve_version_url
+if [ -n "$ANTIGRAVITY_DOWNLOAD_URL" ]; then
+    echo "FAIL: resolve_version_url should not set download URL when version is 'latest'"
+    exit 1
+fi
+echo "PASS: resolve_version_url leaves URL empty when ANTIGRAVITY_VERSION is 'latest'"
+
+# 11. Test that update_antigravity skips when ANTIGRAVITY_VERSION is pinned
+ANTIGRAVITY_DOWNLOAD_URL=""
+ANTIGRAVITY_VERSION="1.2.13"
+SKIP_VERSION_OUTPUT=$(update_antigravity)
+if ! echo "$SKIP_VERSION_OUTPUT" | grep -q "ANTIGRAVITY_VERSION is pinned"; then
+    echo "FAIL: update_antigravity did not skip when ANTIGRAVITY_VERSION was pinned"
+    exit 1
+fi
+echo "PASS: update_antigravity skips upstream auto-updates when ANTIGRAVITY_VERSION is pinned"
 
 echo "=== All entrypoint tests passed successfully ==="
