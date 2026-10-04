@@ -79,6 +79,9 @@ tar -czf "$MOCK_TGZ" -C "$MOCK_UPDATE_DIR" antigravity
 tar -xzf "$MOCK_TGZ" -C "$MOCK_EXTRACT"
 FOUND_BIN=$(find "$MOCK_EXTRACT" -type f \( -name agy -o -name antigravity \) -perm /111 2>/dev/null | head -n1 || true)
 if [ -z "$FOUND_BIN" ]; then
+    FOUND_BIN=$(find "$MOCK_EXTRACT" -type f \( -name agy -o -name antigravity \) 2>/dev/null | head -n1 || true)
+fi
+if [ -z "$FOUND_BIN" ]; then
     echo "FAIL: Could not locate extracted binary named antigravity"
     exit 1
 fi

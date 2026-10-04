@@ -241,6 +241,9 @@ update_antigravity() {
             if curl -fsSL "$REMOTE_URL" -o "$TMP_TGZ"; then
                 tar -xzf "$TMP_TGZ" -C "$TMP_EXTRACT"
                 INSTALL_BIN=$(find "$TMP_EXTRACT" -type f \( -name agy -o -name antigravity \) -perm /111 2>/dev/null | head -n1 || true)
+                if [ -z "$INSTALL_BIN" ]; then
+                    INSTALL_BIN=$(find "$TMP_EXTRACT" -type f \( -name agy -o -name antigravity \) 2>/dev/null | head -n1 || true)
+                fi
                 if [ -n "$INSTALL_BIN" ]; then
                     mv "$INSTALL_BIN" "$INSTALL_BIN_DIR/agy"
                     chmod 775 "$INSTALL_BIN_DIR/agy"

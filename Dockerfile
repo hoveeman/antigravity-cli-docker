@@ -15,7 +15,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     HOME=/config \
-    PATH="/config/.local/bin:/usr/local/bin:$PATH"
+    PATH="/config/.local/bin:/usr/local/bin:$PATH" \
+    PIP_BREAK_SYSTEM_PACKAGES=1
 
 # 1. Install base utilities, build toolchains, and Python 3
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -39,29 +40,34 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Install Node.js LTS (v22.x) from official NodeSource repository
+# 2. Install Python packages requested for agent sidecars/tooling
+RUN pip3 install --no-cache-dir --break-system-packages \
+    "httpx[http2]" \
+    "PyJWT[crypto]"
+
+# 3. Install Node.js LTS (v22.x) from official NodeSource repository
 RUN mkdir -p /etc/apt/keyrings && \
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
     echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" > /etc/apt/sources.list.d/nodesource.list && \
     apt-get update && apt-get install -y --no-install-recommends nodejs && \
     rm -rf /var/lib/apt/lists/*
 
-# 3. Install Docker CLI (for Docker socket passthrough from host)
+# 4. Install Docker CLI (for Docker socket passthrough from host)
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu noble stable" > /etc/apt/sources.list.d/docker.list && \
     apt-get update && apt-get install -y --no-install-recommends docker-ce-cli && \
     rm -rf /var/lib/apt/lists/*
 
-# 4. Install official Google Antigravity CLI flat binary
+# 5. Install official Google Antigravity CLI flat binary
 RUN curl -fsSL https://antigravity.google/cli/install.sh | bash -s -- -d /usr/local/bin && \
     chmod 755 /usr/local/bin/agy && \
     /usr/local/bin/agy --version || true
 
-# 5. Create persistent mount points
+# 6. Create persistent mount points
 RUN mkdir -p /config /workspaces && \
     chmod 777 /config /workspaces
 
-# 6. Install entrypoint script
+# 7. Install entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

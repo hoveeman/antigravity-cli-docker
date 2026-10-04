@@ -1,6 +1,8 @@
 # Environment files with potential secrets
 .env
 *.local
+GEMINI.md
+gemini.md
 
 # Config and test directories
 config/
