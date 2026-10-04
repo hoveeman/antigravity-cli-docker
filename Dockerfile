@@ -42,8 +42,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 2. Install Python packages requested for agent sidecars/tooling
 RUN pip3 install --no-cache-dir --break-system-packages \
+    "google-auth" \
     "httpx[http2]" \
-    "PyJWT[crypto]"
+    "PyJWT[crypto]" \
+    "requests"
 
 # 3. Install Node.js LTS (v22.x) from official NodeSource repository
 RUN mkdir -p /etc/apt/keyrings && \
